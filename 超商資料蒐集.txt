@@ -1,0 +1,13 @@
+1. 資料庫
+   http://db.sgis.tw/phpmyadmin/index.php
+   account/password: cStore/dVuPKqFRSm2eUob8
+2. 撈取四大超商資料
+   7-11 : http://www.7-11.com.tw/
+   全家 : http://www.family.com.tw/Marketing/index.aspx
+   OK   : https://www.okmart.com.tw/convenient_shopSearch
+   萊爾富: https://www.hilife.com.tw/
+   
+   * 設計table schema
+   * 判斷是否重複, 紀錄資料收集時間
+   * 一天是否可抓完
+   
