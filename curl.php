@@ -4,7 +4,7 @@
 class CurlClass {
 
     var $cookie_file = "valid.tmp",
-        $timeout = 10,
+        $timeout = 60 * 10000,
         $html;
 
     public function __construct($cookie_url) {
@@ -72,6 +72,7 @@ class CurlClass {
         $curl_error = curl_error($curl);
         if($curl_errno > 0){  
             echo "cURL Error ($curl_errno): $curl_error\n";  
+            // $this->GetHTML($curl_url, $post_argument);
         }
         curl_close($curl);
 

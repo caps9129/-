@@ -136,6 +136,18 @@ class DBClass {
             address = N'$data[1]', service = N'$data[4]', end_time = N'$data[7]' where id= N'$data[3]'";
 
         }
+        else if($DB_table == "hi-life"){
+
+            $this->sql = "INSERT INTO `$DB_table` (id, name, lng, lat, telno, address, service, start_time, end_time)
+            VALUES (N'$data[0]', N'$data[1]', N'$data[6]', N'$data[5]', N'$data[4]', N'$data[2]', N'$data[3]', N'$data[7]', N'$data[7]')";
+
+            $this->query = "UPDATE `$DB_table` SET name = N'$data[1]', lng = N'$data[6]', lat = N'$data[5]', telno = N'$data[4]',
+            address = N'$data[2]', service = N'$data[3]', end_time = N'$data[7]' where id= N'$data[0]'";
+        }
+        else{
+            print("No match table!!!!!!\n");
+            exit;
+        }
         if(!mysqli_query($this->conn, $this->sql)){
             
             

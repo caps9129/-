@@ -1,5 +1,7 @@
 <?php
 
+require_once('./hi-life_key.php');
+
 
 $arr_geocoding = array("curl_url"=>"http://geocoding.sgis.tw/position.php");
 
@@ -11,8 +13,14 @@ $arr_cityNo_7_11 = array("台北市"=>"01", "基隆市"=>"02", "新北市"=>"03"
                          "花蓮縣"=>"21", "台東縣"=>"22", "澎湖縣"=>"23", "連江縣"=>"24", "金門縣"=>"25");
 $arr_7_11_info_tag = array("POIID", "POIName", "X", "Y", "Telno", "FaxNo", "Address", "StoreImageTitle");  
 
+$arr_basic_hi_life = array("refer_url"=>"http://www.hilife.com.tw", "curl_url"=>"http://www.hilife.com.tw/storeInquiry_street.aspx");
 
-$arr_basic_family = array("cookie_url"=>"http://www.family.com.tw", "curl_url"=>"http://api.map.com.tw/net/familyShop.aspx?");
+$arr_city_hi_life = array("台北市", "基隆市", "新北市", "桃園市", "新竹市", 
+                          "新竹縣", "苗栗縣", "台中市", "彰化縣", "南投縣",
+                          "雲林縣", "嘉義市", "嘉義縣", "台南市", "高雄市",
+                          "屏東縣", "宜蘭縣", "金門縣");
+
+$arr_basic_family = array("refer_url"=>"http://www.family.com.tw", "curl_url"=>"http://api.map.com.tw/net/familyShop.aspx?");
 
 
 
@@ -20,7 +28,7 @@ $arr_basic_family = array("cookie_url"=>"http://www.family.com.tw", "curl_url"=>
 $arr_basic_ok = array("cookie_url"=>"https://www.okmart.com.tw/convenient_shopSearch_ShopResult.aspx", "curl_url"=>"https://www.okmart.com.tw/convenient_shopSearch_ShopResult.aspx");
 
 
-$arr_ok_info_tag = array("h1");  
+$arr_ok_info_tag = array("h1", "ul", "li");  
 
 require_once('./connectDB.php');
 require_once('./curl.php');
@@ -40,137 +48,27 @@ do{
     printf("2.collect hi-life\n");
     printf("3.collect family\n");
     printf("4.collect ok-mart\n");
-    printf("5.collect all xml\n");
+    printf("5.collect all data\n");
     printf("0.EXIT\n");
     $choice = read_chioce();
     if($choice == 1){
-        $DataBase = new DBClass();
-        print("collect 7-11 data........\n");
-        $curl = new CurlClass($arr_basic_7_11['cookie_url']);
-        foreach($arr_cityNo_7_11 as $key => $value){
-            $post = http_build_query(array("commandid" => "GetTown", "cityid" => $value));
-            $curl->GetHTML($arr_basic_7_11['curl_url'], $post);
-            $xml = new XMLParseClass($curl->html);
-            $xml->ParseXML("GeoPosition", "TownName", "GetTown");
-            
-            foreach($xml->arr_townNO as $townNO){
-                $post = http_build_query(array("commandid" => "SearchStore", "city" => $key, "town" => $townNO));
-                $curl->GetHTML($arr_basic_7_11['curl_url'], $post);
-                $xml = new XMLParseClass($curl->html);
-                $xml->ParseXML("GeoPosition", $arr_7_11_info_tag, "SearchStore");
-                $arr_2d_storedata = array_chunk($xml->arr_storeinfo, count($arr_7_11_info_tag));
-                foreach($arr_2d_storedata as $arr_storedata){
-                    array_push($arr_storedata, $datetime);
-                    $DataBase->insert($arr_storedata, '7-11');
-                }
-   
-            }
-
-        }
-        $DataBase->disconnect();
-        print("disconnect\n");
+        exc_7_11();
     }
     else if($choice == 2){
-
-
+     
+        exc_hi_life();
     }
     else if($choice == 3){
-        $DataBase = new DBClass();
-        print("collect family data........\n");
-        $curl = new CurlClass($arr_basic_family['cookie_url']);
-        foreach($arr_cityNo_7_11 as $key => $value){
-       
-            $post = http_build_query(array("searchType" => "ShowTownList", 
-                                           "type" => "", 
-                                           "city" => $key, 
-                                           "fun" => "storeTownList", 
-                                           "key" => "6F30E8BF706D653965BDE302661D1241F8BE9EBC"));
-            $curl_url_post = $arr_basic_family['curl_url'].$post;
-            
-            $curl->GetHTML($curl_url_post, null, $arr_basic_family['cookie_url']);
-            //print($curl->html);
-            if(preg_match('/([a-zA-Z]+)([\(])([^X]+)([\)])/u' ,$curl->html ,$matches)){
-              
-                $json_file = json_decode($matches[3], true);
-               
-            }
-        
-            foreach($json_file as $arr_value){
-                $post = http_build_query(array("searchType" => "ShopList", 
-                                                "type" => "", 
-                                                "city" => $key, 
-                                                "area" => $arr_value['town'],
-                                                "road"=> "",
-                                                "fun" => "showStoreList", 
-                                                "key" => "6F30E8BF706D653965BDE302661D1241F8BE9EBC"));
-
-                $curl_url_post = $arr_basic_family['curl_url'].$post;
-
-                $curl->GetHTML($curl_url_post, null, $arr_basic_family['cookie_url']);
-                if(preg_match('/([a-zA-Z]+)([\(])([^X]+)([\)])/u' ,$curl->html ,$matches)){
-              
-                    $json_file = json_decode($matches[3], true);
-
-                    foreach($json_file as $arr_storedata){
-                        $arr_storedata['datetime'] = $datetime;
-                        $DataBase->insert($arr_storedata, 'family');
-                    }
-                   
-                }
-
-            }
-            
-      
-        }
-
+        exc_family();
     }
     else if($choice == 4){
-        $DataBase = new DBClass();
-        print("collect ok-mart data........\n");
-        $curl = new CurlClass($arr_basic_ok['cookie_url']);
-        $ok_ID = 2;
-        do{
-
-            $ok_ID = str_pad($ok_ID, 4, '0', STR_PAD_LEFT);
-            $ok_ID = (string)$ok_ID;
-
-            $post = http_build_query(array("id" => $ok_ID));
-            $curl->GetHTML($arr_basic_ok['curl_url'], $post);
-            $html = new HTMLParseClass($curl->html);
-            $html->ParseHTML($arr_ok_info_tag);
-            // var_dump(empty($html->arr_storeinfo));
-            if($html->arr_storeinfo){
-               
-                $post = http_build_query(array("addr" => $html->arr_storeinfo[1]));
-                $curl->GetHTML($arr_geocoding['curl_url'], $post);
-                $json_file = json_decode($curl->html, true);
-                if($json_file["accuracy"] != 3){
-                    array_push($html->arr_storeinfo, $json_file["lat"]);
-                    array_push($html->arr_storeinfo, $json_file["lng"]);
-                }
-                else{
-                    array_push($html->arr_storeinfo, 'NA');
-                    array_push($html->arr_storeinfo, 'NA');
-                    
-                    // 
-                }
-                array_push($html->arr_storeinfo, $datetime);
-                $DataBase->insert($html->arr_storeinfo, "ok-mart");
-               
-            }
-            
-
-            $ok_ID = intval($ok_ID);
-            $ok_ID ++;
-            
-            
-        
-        }while($ok_ID <= 10000);
-
-
+        exc_ok_mart();
     }
     else if($choice == 5){
-
+        exc_7_11();
+        exc_hi_life();
+        exc_family();
+        exc_ok_mart();
     }
 }while($choice != 0);
 
@@ -185,6 +83,200 @@ function read_chioce(){
 
     return $input;
 }
+
+function exc_ok_mart(){
+    
+    global $arr_basic_ok, $arr_ok_info_tag, $datetime, $arr_geocoding;
+
+    $DataBase = new DBClass();
+    print("collect ok-mart data........\n");
+    $curl = new CurlClass($arr_basic_ok['cookie_url']);
+    $ok_ID = 2;
+    
+    do{
+
+        $ok_ID = str_pad($ok_ID, 4, '0', STR_PAD_LEFT);
+        $ok_ID = (string)$ok_ID;
+
+        $post = http_build_query(array("id" => $ok_ID));
+        $curl->GetHTML($arr_basic_ok['curl_url'], $post);
+        $html = new HTMLParseClass($curl->html);
+        $html->ParseHTML($arr_ok_info_tag);
+        // var_dump(empty($html->arr_storeinfo));
+        if($html->arr_storeinfo){
+           
+            $post = http_build_query(array("addr" => $html->arr_storeinfo[1]));
+            $curl->GetHTML($arr_geocoding['curl_url'], $post);
+            $json_file = json_decode($curl->html, true);
+            if($json_file["accuracy"] != 3){
+                array_push($html->arr_storeinfo, $json_file["lat"]);
+                array_push($html->arr_storeinfo, $json_file["lng"]);
+            }
+            else{
+                array_push($html->arr_storeinfo, 'NA');
+                array_push($html->arr_storeinfo, 'NA');
+            }
+            array_push($html->arr_storeinfo, $datetime);
+            $DataBase->insert($html->arr_storeinfo, "ok-mart");
+           
+        }
+
+        $ok_ID = intval($ok_ID);
+        $ok_ID ++;  
+        
+    }while($ok_ID <= 10000);
+
+}
+
+function exc_family(){
+
+    global $arr_cityNo_7_11,  $arr_basic_family, $datetime;
+
+    $DataBase = new DBClass();
+    print("collect family data........\n");
+    $curl = new CurlClass($arr_basic_family['refer_url']);
+    foreach($arr_cityNo_7_11 as $key => $value){
+   
+        $post = http_build_query(array("searchType" => "ShowTownList", 
+                                       "type" => "", 
+                                       "city" => $key, 
+                                       "fun" => "storeTownList", 
+                                       "key" => "6F30E8BF706D653965BDE302661D1241F8BE9EBC"));
+        $curl_url_post = $arr_basic_family['curl_url'].$post;
+        
+        $curl->GetHTML($curl_url_post, null, $arr_basic_family['refer_url']);
+        //print($curl->html);
+        if(preg_match('/([a-zA-Z]+)([\(])([^X]+)([\)])/u' ,$curl->html ,$matches)){
+          
+            $json_file = json_decode($matches[3], true);
+
+            foreach($json_file as $arr_value){
+                $post = http_build_query(array("searchType" => "ShopList", 
+                                                "type" => "", 
+                                                "city" => $key, 
+                                                "area" => $arr_value['town'],
+                                                "road"=> "",
+                                                "fun" => "showStoreList", 
+                                                "key" => "6F30E8BF706D653965BDE302661D1241F8BE9EBC"));
+
+                $curl_url_post = $arr_basic_family['curl_url'].$post;
+
+                $curl->GetHTML($curl_url_post, null, $arr_basic_family['refer_url']);
+                if(preg_match('/([a-zA-Z]+)([\(])([^X]+)([\)])/u' ,$curl->html ,$matches)){
+              
+                    $json_file = json_decode($matches[3], true);
+
+                    foreach($json_file as $arr_storedata){
+                        $arr_storedata['datetime'] = $datetime;
+                        $DataBase->insert($arr_storedata, 'family');
+                    }
+                   
+                }
+
+            }
+           
+        } 
+  
+    }
+}
+
+function exc_hi_life(){
+    global $arr_city_hi_life, $arr_key, $arr_event, $arr_basic_hi_life, $arr_geocoding, $datetime;
+    $DataBase = new DBClass();
+    print("collect hi-life data........\n");
+    $curl = new CurlClass($arr_basic_hi_life['refer_url']);
+    foreach($arr_city_hi_life as $key){
+
+
+        $post = http_build_query(array( "__EVENTTARGET" => "AREA",
+                                        "__EVENTARGUMENT" => "",
+                                        "__LASTFOCUS" => "",
+                                        "__VIEWSTATE" => $arr_key[$key],
+                                        "__VIEWSTATEGENERATOR"=> "B77476FC",
+                                        "__EVENTVALIDATION" => $arr_event[$key],
+                                        "CITY" => $key,
+                                        "AREA" => ""
+                                ));
+        $curl->GetHTML($arr_basic_hi_life['curl_url'], $post, $arr_basic_hi_life['refer_url']);
+
+        $html = new HTMLParseClass($curl->html);
+        //print($curl->html);
+        $html->ParseCounty();
+
+        foreach($html->arr_county as $county_value){
+
+            print($key.":".$county_value."\n");
+
+            $post = http_build_query(array( "__EVENTTARGET" => "AREA",
+                                            "__EVENTARGUMENT" => "",
+                                            "__LASTFOCUS" => "",
+                                            "__VIEWSTATE" => $arr_key[$key],
+                                            "__VIEWSTATEGENERATOR"=> "B77476FC",
+                                            "__EVENTVALIDATION" => $arr_event[$key],
+                                            "CITY" => $key,
+                                            "AREA" => $county_value
+            ));
+            $curl->GetHTML($arr_basic_hi_life['curl_url'], $post, $arr_basic_hi_life['refer_url']);
+            $html = new HTMLParseClass($curl->html);
+            $html->ParseStoreINFO();
+            //print_r($html->arr_storeinfo);
+            $arr_2d_storedata = array_chunk($html->arr_storeinfo, 5);
+            foreach($arr_2d_storedata as $arr_storedata){
+                $post = http_build_query(array("addr" => $arr_storedata[2]));
+                $curl->GetHTML($arr_geocoding['curl_url'], $post);
+                $json_file = json_decode($curl->html, true);
+                if($json_file["accuracy"] != 3){
+                    array_push($arr_storedata, $json_file["lat"]);
+                    array_push($arr_storedata, $json_file["lng"]);
+                }
+                else{
+                    array_push($arr_storedata, 'NA');
+                    array_push($arr_storedata, 'NA');
+                    
+                    // 
+                }
+                array_push($arr_storedata, $datetime);
+                $DataBase->insert($arr_storedata, 'hi-life');
+            }
+        }                       
+
+    }
+
+}
+
+
+
+function exc_7_11(){
+    global $arr_cityNo_7_11, $arr_basic_7_11, $arr_7_11_info_tag, $datetime;
+    
+    $DataBase = new DBClass();
+    print("collect 7-11 data........\n");
+    $curl = new CurlClass($arr_basic_7_11['cookie_url']);
+    foreach($arr_cityNo_7_11 as $key => $value){
+        $post = http_build_query(array("commandid" => "GetTown", "cityid" => $value));
+        $curl->GetHTML($arr_basic_7_11['curl_url'], $post);
+        $xml = new XMLParseClass($curl->html);
+        $xml->ParseXML("GeoPosition", "TownName", "GetTown");
+        
+        foreach($xml->arr_townNO as $townNO){
+            $post = http_build_query(array("commandid" => "SearchStore", "city" => $key, "town" => $townNO));
+            $curl->GetHTML($arr_basic_7_11['curl_url'], $post);
+            $xml = new XMLParseClass($curl->html);
+            $xml->ParseXML("GeoPosition", $arr_7_11_info_tag, "SearchStore");
+            $arr_2d_storedata = array_chunk($xml->arr_storeinfo, count($arr_7_11_info_tag));
+            foreach($arr_2d_storedata as $arr_storedata){
+                array_push($arr_storedata, $datetime);
+                $DataBase->insert($arr_storedata, '7-11');
+            }
+
+        }
+
+    }
+    $DataBase->disconnect();
+    print("disconnect\n");
+}
+
+
 
 
 ?>
