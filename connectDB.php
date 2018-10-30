@@ -47,24 +47,31 @@ class DBClass {
             exit;
         }
         else{
-            if (!$this->conn->set_charset("utf8")) {
-                printf("Error loading character set utf8: %s\n", $this->conn->error);
-            } else {
-                print("dbConnect successful\n");
-            }  
+            if ( TRUE !== $this->conn->set_charset( 'utf8mb4' ) )
+                throw new \Exception( $this->conn->error, $this->conn->errno );
+        
+            if ( TRUE !== $this->conn->query( 'SET collation_connection = @@collation_database;' ) )
+            throw new \Exception( $this->conn->error, $this->conn->errno );
+    
+            echo 'character_set_name: ', $this->conn->character_set_name(), '<br />', PHP_EOL;
+            
+            foreach( $this->conn->query( "SHOW VARIABLES LIKE '%_connection';" )->fetch_all() as $setting )
+            echo $setting[0], ': ', $setting[1], '<br />', PHP_EOL;
+
+            
         }
     }
 
 
 
-    public function select(){
+    public function select($table_name){
 
         if(!mysqli_ping($this->conn)){
             $this->reconnect();
             $this->select();
         }
         
-        $this->query = "SELECT ID, type, user, description, address, status, selected, log FROM `report` order by log DESC";
+        $this->query = "SELECT name, id FROM `$table_name` order by log DESC";
         $this->result = $this->conn->query($this->query);
 
         if($this->result->num_rows <= 0){
@@ -96,25 +103,29 @@ class DBClass {
         //return $this->select_result;
     }
     //insert record
-    public function insert($data, $DB_table) {
+    public function insert($data, $DB_table, $comment = false) {
 
         if(!mysqli_ping($this->conn)){
             $this->reconnect();
             $this->insert($data, $DB_table);
         }
    
-        //print_r($data);
+        if($comment){
 
-        if($DB_table == "7-11"){
+            $this->query = "UPDATE `$DB_table` SET rating = N'$data[0]', comment_count = N'$data[1]', comment = N'$data[2]' where id = N'$data[3]'";
+        }
 
+        else if($DB_table == "7-11"){
+            
             $this->sql = "INSERT INTO `$DB_table` (id, name, lng, lat, telno, faxno, address, service, start_time, end_time)
-            VALUES (N'$data[0]', N'$data[1]', N'$data[2]', N'$data[3]', N'$data[4]', N'$data[5]', N'$data[6]', N'$data[7]', N'$data[8]', N'$data[8]')";
+            VALUES (N'$data[0]', N'$data[1]門市', N'$data[2]', N'$data[3]', N'$data[4]', N'$data[5]', N'$data[6]', N'$data[7]', N'$data[8]', N'$data[8]')";
 
-            $this->query = "UPDATE `$DB_table` SET name = N'$data[1]', lng = N'$data[2]', lat = N'$data[3]', telno = N'$data[4]', 
+            $this->query = "UPDATE `$DB_table` SET name = N'$data[1]門市', lng = N'$data[2]', lat = N'$data[3]', telno = N'$data[4]', 
             faxno = N'$data[5]', address = N'$data[6]', service = N'$data[7]', end_time = N'$data[8]' where id = N'$data[0]'";
+            
         }
         else if($DB_table == "family"){
-            
+
             $data[0] = $data['SERID'];
 
             if($data['twoice'] == "")
@@ -125,30 +136,65 @@ class DBClass {
 
             $this->query = "UPDATE `$DB_table` SET name = N'$data[NAME]', lng = N'$data[px]', lat = N'$data[py]', telno = N'$data[TEL]', postel = N'$data[POSTel]',
             address = N'$data[addr]', service = N'$data[all]', pkey = N'$data[pkey]', oldpkey = N'$data[oldpkey]', post = N'$data[post]', twoice = N'$data[twoice]', end_time = N'$data[datetime]' where id= N'$data[SERID]'";
-
+            
         }
         else if($DB_table == "ok-mart"){
+               
+            if(count($data) == 12){
             
-            $this->sql = "INSERT INTO `$DB_table` (id, name, lng, lat, telno, address, service, start_time, end_time)
-            VALUES (N'$data[3]', N'$data[0]', N'$data[6]', N'$data[5]', N'$data[2]', N'$data[1]', N'$data[4]', N'$data[7]', N'$data[7]')";
+                $this->sql = "INSERT INTO `$DB_table` (id, name, lng, lat, telno, address, service, start_time, end_time)
+                VALUES (N'$data[3]', N'$data[0]', N'$data[10]', N'$data[9]', N'$data[2]', N'$data[1]', N'$data[7]', N'$data[11]', N'$data[11]')";
 
-            $this->query = "UPDATE `$DB_table` SET name = N'$data[0]', lng = N'$data[6]', lat = N'$data[5]', telno = N'$data[2]',
-            address = N'$data[1]', service = N'$data[4]', end_time = N'$data[7]' where id= N'$data[3]'";
-
+                $this->query = "UPDATE `$DB_table` SET name = N'$data[0]', lng = N'$data[9]', lat = N'$data[10]', telno = N'$data[2]',
+                address = N'$data[1]', service = N'$data[7]', end_time = N'$data[11]' where id= N'$data[3]'";
+            }
         }
         else if($DB_table == "hi-life"){
 
+           
+            $this->query = "UPDATE `$DB_table` SET rating = N'$data[0]', comment_count = N'$data[1]', comment = N'$data[2]' where id= N'$data[3]'";
+        
+        
             $this->sql = "INSERT INTO `$DB_table` (id, name, lng, lat, telno, address, service, start_time, end_time)
             VALUES (N'$data[0]', N'$data[1]', N'$data[6]', N'$data[5]', N'$data[4]', N'$data[2]', N'$data[3]', N'$data[7]', N'$data[7]')";
 
             $this->query = "UPDATE `$DB_table` SET name = N'$data[1]', lng = N'$data[6]', lat = N'$data[5]', telno = N'$data[4]',
             address = N'$data[2]', service = N'$data[3]', end_time = N'$data[7]' where id= N'$data[0]'";
+            
         }
         else{
             print("No match table!!!!!!\n");
             exit;
         }
-        if(!mysqli_query($this->conn, $this->sql)){
+        if($comment){
+
+            // $comment = '[["2j/雨曦","1","他忘記我的熱美式：（","1540078274"],["Elmer Tan","5","人非常多，店員依舊盡心盡力服務~👍","1503491074"],["Andy Hung","4","2016-12 每年跨年都會拆門的門市，沒有內用座位","1482647288"],["kenny gi","4","就7-11 整體佳","1516042378"],["Cliff
+            // Kung","5","即使人潮眾多店員依舊努力服務 , 大推","1484040469"]]';
+            // $this->query = "UPDATE test SET comment = '$comment' where id = 5000";
+
+            if(mysqli_query($this->conn, $this->query)){
+                echo "Update in ".$DB_table.": ".$data[3]." complete<br>\n";
+                // exit;
+            }
+            else{
+                // print(mysqli_error($this->conn)."\n");
+                // exit;
+                $data[2] = mysqli_real_escape_string($this->conn, $data[2]);
+
+                $this->query = "UPDATE `$DB_table` SET rating = N'$data[0]', comment_count = N'$data[1]', comment = '$data[2]'  where id = N'$data[3]'";
+                if(mysqli_query($this->conn, $this->query)){
+                    echo "Update in ".$DB_table.": ".$data[3]." complete<br>\n";
+                }
+                else{
+                    print(mysqli_error($this->conn)."\n");
+                    exit;
+                }
+                //$this->insert($data, $DB_table, true);
+            }
+
+        }
+
+        else if(!mysqli_query($this->conn, $this->sql)){
             
             
             if(strpos(mysqli_error($this->conn),"key 'PRIMARY'")!==false){
