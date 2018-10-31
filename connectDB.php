@@ -66,6 +66,8 @@ class DBClass {
 
     public function select($table_name){
 
+        $this->select_result = array();
+
         if(!mysqli_ping($this->conn)){
             $this->reconnect();
             $this->select();
@@ -187,7 +189,6 @@ class DBClass {
                 }
                 else{
                     print(mysqli_error($this->conn)."\n");
-                    exit;
                 }
                 //$this->insert($data, $DB_table, true);
             }
