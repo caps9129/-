@@ -126,8 +126,7 @@ function exc_review(){
                         $input = "OK".$select_result['name'];
                 }
                 $post = http_build_query(array("input" => $input, "inputtype" => "textquery", "fields" => "place_id", "key" => $api_key));
-                print($post."\n");
-                exit;
+  
                 $curl_url_post = $arr_basic_google_map['get_ID_url'].$post;
 
                 //print($select_result['name']."\n");
